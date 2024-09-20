@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Gestion des Réservations</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FullCalendar CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet" />
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+        }
+
+        .nav-link {
+            color: #007aff;
+            font-weight: 600;
+        }
+
+        .nav-link:hover {
+            color: #005bbb;
+        }
+
+        .dashboard-card {
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-header {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-btn {
+            background-color: #007aff;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .dashboard-btn:hover {
+            background-color: #005bbb;
+        }
+
+        .input-field {
+            border: 1px solid #cfcfcf;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            transition: border-color 0.2s ease-in-out;
+        }
+
+        .input-field:focus {
+            border-color: #007aff;
+            outline: none;
+        }
+
+        .editBtn::before, .deleteBtn::before {
+            content: '';
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .editBtn::before {
+            background: url('https://img.icons8.com/material-outlined/24/007aff/edit.png') no-repeat;
+            width: 16px;
+            height: 16px;
+        }
+
+        .deleteBtn::before {
+            background: url('https://img.icons8.com/material-outlined/24/fa314a/trash.png') no-repeat;
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Surlignage de la ligne trouvée */
+        .highlight {
+            background-color: #fffbcc;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm py-4 mb-10">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="#" class="text-2xl font-semibold">Réservations</a>
+            <ul class="flex space-x-8">
+                <li><a href="#" class="nav-link">Calendrier</a></li>
+                <li><a href="#" class="nav-link">Ajouter Réservation</a></li>
+                <li><a href="#" class="nav-link">Historique</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Dashboard Section -->
+    <div class="container mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <!-- Section du Calendrier -->
+            <div class="dashboard-card">
+                <h2 class="dashboard-header">Calendrier des Réservations</h2>
+                <div id="calendar" class="border rounded-lg shadow-lg"></div>
+                
+                <!-- Détails de la réservation sous le calendrier -->
+                <div id="eventDetails" class="mt-6 hidden">
+                    <h3 class="text-lg font-semibold mb-4">Détails de la Réservation</h3>
+                    <p><strong>Status :</strong> <span id="detailStatus"></span></p>
+                    <p><strong>Date d'arrivée :</strong> <span id="detailStart"></span></p>
+                    <p><strong>Date de départ :</strong> <span id="detailEnd"></span></p>
+                    <p><strong>Tarif :</strong> <span id="detailTarif"></span>€</p>
+                </div>
+            </div>
+
+            <!-- Section des détails et formulaire -->
+            <div class="dashboard-card">
+                <h2 class="dashboard-header">Ajouter ou Modifier une Réservation</h2>
+                <form id="reservationForm">
+                    <div class="mb-4">
+                        <label class="block mb-2">Status</label>
+                        <select id="status" class="input-field block w-full">
+                            <option value="disponible">Disponible</option>
+                            <option value="réservé">Réservé</option>
+                            <option value="promotion">Promotion</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block mb-2">Date d'arrivée</label>
+                        <input type="date" id="startDate" class="input-field block w-full">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block mb-2">Date de départ</label>
+                        <input type="date" id="endDate" class="input-field block w-full">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block mb-2">Tarif</label>
+                        <input type="number" id="tarif" class="input-field block w-full" placeholder="Entrez le tarif">
+                    </div>
+                    <button type="submit" class="dashboard-btn w-full">Ajouter ou Modifier</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Recherche -->
+        <div class="dashboard-card mt-10">
+            <h2 class="dashboard-header">Rechercher une Réservation</h2>
+            <input type="text" id="searchInput" class="input-field block w-full" placeholder="Rechercher par date, status ou tarif...">
+        </div>
+
+        <!-- Tableau des réservations -->
+        <div class="mt-10 dashboard-card">
+            <h2 class="dashboard-header">Tableau des Réservations</h2>
+            <table class="min-w-full bg-white shadow-md rounded-lg">
+                <thead>
+                    <tr>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Date d'arrivée</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Date de départ</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Tarif</th>
+                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="reservationTable">
+                    <!-- Les nouvelles réservations apparaîtront ici -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- FullCalendar JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let reservations = []; // Tableau pour stocker les réservations
+            var calendarEl = document.getElementById('calendar');
+            var selectedRow = null; // Pour suivre la ligne à modifier
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                height: 400,
+                selectable: true,
+                eventClick: function(info) {
+                    displayEventDetails(info.event);
+                },
+                events: []
+            });
+
+            calendar.render();
+
+            // Fonction pour ajouter une période au tableau
+            function addReservation(status, startDate, endDate, tarif) {
+                const tableBody = document.getElementById('reservationTable');
+                const row = document.createElement('tr');
+                const reservationId = `${startDate}-${endDate}-${Math.random()}`;
+
+                row.dataset.id = reservationId;
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${status}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${formatDate(startDate)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${formatDate(endDate)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${tarif}€</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button class="editBtn text-blue-500">Modifier</button>
+                        <button class="deleteBtn text-red-500 ml-4">Supprimer</button>
+                    </td>
+                `;
+
+                tableBody.appendChild(row);
+
+                // Ajouter la réservation dans le tableau
+                reservations.push({ id: reservationId, status, startDate, endDate, tarif });
+
+                // Ajouter l'événement dans le calendrier
+                calendar.addEvent({
+                    id: reservationId,
+                    title: status,
+                    start: startDate,
+                    end: endDate,
+                    color: getColorForStatus(status),
+                    extendedProps: { tarif: tarif }
+                });
+
+                // Ajouter les événements de modification et de suppression
+                row.querySelector('.editBtn').addEventListener('click', function () {
+                    editReservation(row, status, startDate, endDate, tarif);
+                });
+
+                row.querySelector('.deleteBtn').addEventListener('click', function () {
+                    deleteReservation(row, reservationId);
+                });
+            }
+
+            // Fonction pour modifier une réservation
+            function editReservation(row, status, startDate, endDate, tarif) {
+                document.getElementById('status').value = status;
+                document.getElementById('startDate').value = startDate;
+                document.getElementById('endDate').value = endDate;
+                document.getElementById('tarif').value = tarif;
+
+                selectedRow = row; // Sauvegarder la ligne pour la modifier après
+            }
+
+            // Fonction pour supprimer une réservation
+            function deleteReservation(row, reservationId) {
+                row.remove();
+                reservations = reservations.filter(reservation => reservation.id !== reservationId); // Retirer la réservation
+                calendar.getEventById(reservationId)?.remove(); // Supprime l'événement du calendrier
+            }
+
+            // Fonction pour gérer la soumission du formulaire
+            document.getElementById('reservationForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                const status = document.getElementById('status').value;
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                const tarif = document.getElementById('tarif').value;
+
+                if (selectedRow) {
+                    const reservationId = selectedRow.dataset.id;
+
+                    // Supprimer l'ancien événement du calendrier
+                    calendar.getEventById(reservationId)?.remove();
+
+                    // Ajouter un nouvel événement avec les nouvelles données
+                    calendar.addEvent({
+                        id: reservationId,
+                        title: status,
+                        start: startDate,
+                        end: endDate,
+                        color: getColorForStatus(status),
+                        extendedProps: { tarif: tarif }
+                    });
+
+                    // Mettre à jour la ligne dans le tableau
+                    selectedRow.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">${status}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${formatDate(startDate)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${formatDate(endDate)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${tarif}€</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button class="editBtn text-blue-500">Modifier</button>
+                            <button class="deleteBtn text-red-500 ml-4">Supprimer</button>
+                        </td>
+                    `;
+                    selectedRow = null;
+                } else {
+                    // Ajouter une nouvelle réservation si aucune ligne n'est sélectionnée
+                    addReservation(status, startDate, endDate, tarif);
+                }
+            });
+
+            // Fonction pour afficher les détails d'une réservation
+            function displayEventDetails(event) {
+                document.getElementById('detailStatus').textContent = event.title;
+                document.getElementById('detailStart').textContent = formatDate(event.startStr);
+                document.getElementById('detailEnd').textContent = formatDate(event.endStr || event.startStr);
+                document.getElementById('detailTarif').textContent = event.extendedProps.tarif;
+                document.getElementById('eventDetails').classList.remove('hidden');
+            }
+
+            // Fonction pour obtenir la couleur en fonction du status
+            function getColorForStatus(status) {
+                if (status === 'disponible') {
+                    return 'green';
+                } else if (status === 'réservé') {
+                    return 'red';
+                } else if (status === 'promotion') {
+                    return 'yellow';
+                } else {
+                    return 'gray';
+                }
+            }
+
+            // Fonction pour formater la date
+            function formatDate(dateStr) {
+                const date = new Date(dateStr);
+                const options = { day: 'numeric', month: 'long', year: 'numeric' };
+                return date.toLocaleDateString('fr-FR', options);
+            }
+
+            // Fonction de recherche pour surligner la ligne correspondante
+            document.getElementById('searchInput').addEventListener('input', function () {
+                const searchText = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#reservationTable tr');
+
+                rows.forEach(row => {
+                    row.classList.remove('highlight');
+                    const status = row.cells[0].textContent.toLowerCase();
+                    const startDate = row.cells[1].textContent.toLowerCase();
+                    const endDate = row.cells[2].textContent.toLowerCase();
+                    const tarif = row.cells[3].textContent.toLowerCase();
+
+                    if (status.includes(searchText) || startDate.includes(searchText) || endDate.includes(searchText) || tarif.includes(searchText)) {
+                        row.classList.add('highlight');
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
